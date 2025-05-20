@@ -1,0 +1,53 @@
+{
+	"type": "CompositeFSM",
+	"children": 
+	{
+		"child1":
+		{
+			"type": "CompositeFSM",
+			"children":
+			{
+				"child1":
+				{
+					"type": "LeafFSM",
+					"states":
+					{
+						"state":
+						{
+							"name": "movetolocation",
+							"from": "locationA",
+							"to": "locationB"
+						}
+					}
+				},
+				
+				"child2":
+				{
+					"type": "LeafFSM",
+					"states":
+					{
+						"state":
+						{
+							"name": "movetolocation",
+							"from": "locationB",
+							"to":	"locationC"
+						}
+					}
+				},
+				
+				"child3":
+				{
+					"type": "LeafFSM",
+					"states":
+					{
+						"state":
+						{
+							"name": "idle",
+							"duration": 2
+						}
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,17 @@
+{
+    "name": "Harris.GPC",
+    "rootNamespace": "",
+    "references": [
+        "GUID:838e493b666eec14a995fc6cf5487277",
+        "GUID:75469ad4d38634e559750d17036d5f7c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
