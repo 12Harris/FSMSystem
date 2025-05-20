@@ -2,6 +2,8 @@ using UnityEngine;
 using Harris.GPC;
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEditor.ProjectWindowCallback;
 
 namespace FSMController
 {
@@ -10,14 +12,25 @@ namespace FSMController
     {
 
         private IdleFSMData _saveData;
+        private float _timer = 0f;
+        private IntelligentBot _bot;
+
+        public IdleState(IntelligentBot bot)
+        {
+            AddExitGuard("TimeOut", () => { return _timer > 2.0f; });
+            _bot = bot;
+        }
 
         public override void Enter()
         {
             Debug.Log("Entered idle state");
+            _timer = 0f;
+            _bot.gameObject.GetComponent<Rigidbody>().linearVelocity = Vector3.zero;
         }
 
         public override void Tick(in float dt)
         {
+            _timer += dt;
             Debug.Log("Ticking idle state!");
         }
 
@@ -59,17 +72,26 @@ namespace FSMController
 
     public class MoveToLocationState : FSM_State
     {
-        public string _start;
-        public string _end;
+        //public string _start;
+        //public string _end;
+
+        public ConnectedWaypoint _start;
+        public ConnectedWaypoint _end;
+
         private float _timer = 0f;
         private MoveToLocationFSMData _saveData;
 
-        public MoveToLocationState(string start, string end)
+        private bool _arrived = false;
+
+        private IntelligentBot _bot;
+
+        public MoveToLocationState(IntelligentBot bot, ConnectedWaypoint start, ConnectedWaypoint end)
         {
             _start = start;
             _end = end;
+            _bot = bot;
 
-            AddExitGuard("Arrived", ()=>{return _timer >=2.0f;});
+            AddExitGuard("Arrived", () => { return _arrived;});
 
         }
 
@@ -82,8 +104,18 @@ namespace FSMController
 
         public override void Tick(in float dt)
         {
-            _timer+=dt;
+            _timer += dt;
             Debug.Log("Moving to: " + _end);
+            var v = _bot.transform.position;
+            v.y = _start.transform.position.y;
+
+            var distanceToDestination = Vector3.Distance(v, _end.transform.position);
+            _arrived = distanceToDestination < 0.1f;
+
+            if (_arrived)
+                return;
+
+            _bot.gameObject.GetComponent<Rigidbody>().linearVelocity = (_end.transform.position - v).normalized * 5.0f;
         }
         public override void Exit()
         {
@@ -93,8 +125,8 @@ namespace FSMController
         public override string ToFile(string fileName, int level)
         {
             _saveData = ScriptableObject.CreateInstance<MoveToLocationFSMData>();
-            _saveData._from = _start;
-            _saveData._to = _end;
+            _saveData._from = _start.transform.position;
+            _saveData._to = _end.transform.position;
             string json = JsonUtility.ToJson(_saveData ,true);
 
             //reformat the json to match current indentation level
@@ -132,7 +164,7 @@ namespace FSMController
 
         public IdleFSM()
         {
-            _state = new IdleState();
+            _state = new IdleState(null);
             int index = AddState(_state);
         }
     }
@@ -140,16 +172,16 @@ namespace FSMController
     [Serializable]
     public class MoveToLocationFSM: FSM
     {
-        public string locationA;
-        public string locationB;
+        public ConnectedWaypoint locationA;
+        public ConnectedWaypoint locationB;
         private MoveToLocationState _state;
         public MoveToLocationState State => _state;
 
-        public MoveToLocationFSM(string start, string end)
+        public MoveToLocationFSM(ConnectedWaypoint start,ConnectedWaypoint end)
         {
             locationA = start;
             locationB = end;
-            _state = new MoveToLocationState(start, end);
+            _state = new MoveToLocationState(null,start, end);
             int index = AddState(_state);
             AddTransition(index, -2, _state.GetExitGuard("Arrived"));//Abort this state machine
         }
@@ -402,10 +434,10 @@ namespace FSMController
             else
                 Debug.Log("root is valid");
 
-            //if(_root.list.Count == 0)
-                //return;
+            if(_root.list.Count == 0)
+                return;
                 
-            //_root.list[current].Update();
+            _root.list[current].Update();
         }
 
         public string Serialize(string filename)

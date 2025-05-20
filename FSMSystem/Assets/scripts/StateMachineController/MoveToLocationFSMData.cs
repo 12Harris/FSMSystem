@@ -2,6 +2,6 @@ using UnityEngine;
 
 public class MoveToLocationFSMData : FSMDataBase
 {
-    public string _from;
-    public string _to;
+    public Vector3 _from;
+    public Vector3 _to;
 }

@@ -106,11 +106,32 @@ namespace Harris.GPC
 			BoundState ctx = _states[_currentState];
 			ctx.state.Tick(deltaTime);
 
-			// check if state has available exits
-			int exitState = GetAvailableExit(_currentState);
-			if (exitState > -1) { SetState(exitState); }
+			int exitState = -1;
 
-			if(exitState == -2)
+			bool stop = false;
+
+			//does this state have transition weights? if so get random exit from this state
+			for (int i = 0; i < ctx.transitions.Count && stop==false; i++)
+			{
+				Transition t = ctx.transitions[i];
+				if (t.weight.Invoke() > 0f)
+				{
+					exitState = GetRandomExit(_currentState);
+					stop = true;
+				}
+			}
+
+			if(exitState == -1)
+			{
+				// check if state has available exits
+				exitState = GetAvailableExit(_currentState);
+			}
+
+			if (exitState > -1) { SetState(exitState); }
+			
+			
+			//Abort this FSM completely
+			if (exitState == -2)
 			{
 				// exit current state
 				BoundState oldState = GetStateAtIndex(_currentState);
@@ -119,7 +140,7 @@ namespace Harris.GPC
 
 				_onFinished?.Invoke(this);
 				return;
-				
+
 			}
 		}
 
@@ -234,47 +255,57 @@ namespace Harris.GPC
 
 
 		/// <summary>
-/// Finds random transition out of given state
-/// </summary>
-/// <param name="stateIndex"></param>
-/// <returns>Exit state</returns>
+		/// Finds random transition out of given state
+		/// </summary>
+		/// <param name="stateIndex"></param>
+		/// <returns>Exit state</returns>
 
-private int GetRandomExit(in int stateIndex)
-{
-    BoundState ctx = GetStateAtIndex(stateIndex);
-    if(ctx == null) { return -1; }
+		private int GetRandomExit(in int stateIndex)
+		{
+			BoundState ctx = GetStateAtIndex(stateIndex);
+			if (ctx == null) { return -1; }
 
-    // index in transition list for state
-    int transitionIndex = -1;
+			// index in transition list for state
+			int transitionIndex = -1;
 
-    //Initialize the statePoll list which will be used to choose a random state
-    //It contains the summed weights of all ready transitions
-    //The summed weight of all ready transitions mustn't exceed 100
-    //but will be less than 100 if the eval condition for this transition fails, because that transition will be skipped
-    List<int> statesPoll = new List<int>();
+			//Initialize the statePoll list which will be used to choose a random state
+			//It contains the summed weights of all ready transitions
+			//The summed weight of all ready transitions mustn't exceed 100
+			//but will be less than 100 if the eval condition for this transition fails, because that transition will be skipped
+			List<int> statesPoll = new List<int>();
 
-    //Loop through all transitions for this state
-    for(int i = 0; i < ctx.transitions.Count; i++)
-    {
-        Transition t = ctx.transitions[i];
+			//Loop through all transitions for this state
+			for (int i = 0; i < ctx.transitions.Count; i++)
+			{
+				Transition t = ctx.transitions[i];
 
-        // eval condition => Is it possible to exit to the new state of the current transition?
-        if (!t.guard.Invoke()) { continue; }
+				// eval condition => Is it possible to exit to the new state of the current transition?
+				if (!t.guard.Invoke()) { continue; }
 
-        //Get the weight of this transition
-    
-        float weight = t.weight.Invoke();	//30% probability, 40% probability
-        for(int j = 0; j < weight; j++)
-        {
-            statesPoll.Add(t.state);
-        }
-    }
+				//Get the weight of this transition
 
-    //choose a random state
-    int randomState = UnityEngine.Random.Range(0, statesPoll.Count);
-    //return randomState;
-	return statesPoll[randomState];
-}
+				float weight = t.weight.Invoke();   //30% probability, 40% probability
+				for (int j = 0; j < weight; j++)
+				{
+					statesPoll.Add(t.state);
+				}
+			}
+
+			//choose a random state
+			int randomState = UnityEngine.Random.Range(0, statesPoll.Count);
+			//return randomState;
+
+			Debug.Log("state poll count: " + statesPoll.Count);
+
+			if (statesPoll.Count > 0)
+			{
+				Debug.Log("random state: " + statesPoll[randomState]);
+
+				return statesPoll[randomState];
+			}
+
+			return -1;
+		}
 
 		[Serializable]
 		// transition to another state

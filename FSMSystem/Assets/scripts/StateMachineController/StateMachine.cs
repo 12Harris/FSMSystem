@@ -11,7 +11,7 @@ namespace FSMController
 
         public void Start()
         {
-            _fsm.Desc ="Composite 1";
+            /*_fsm.Desc ="Composite 1";
                     
             LeafFSM _subFSM1 =  new LeafFSM(new MoveToLocationFSM("A", "B"));
 
@@ -27,7 +27,7 @@ namespace FSMController
             
             AddComposite(_fsm);
             StateMachineController.SerializeStateMachine(this, " temp");
-            //Initialize();
+            //Initialize();*/
         }
     }
 }
