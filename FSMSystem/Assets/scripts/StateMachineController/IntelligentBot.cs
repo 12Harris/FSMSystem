@@ -55,7 +55,7 @@ namespace FSMController
             }*/
             foreach(var wp in _waypoints)
             {
-                foreach(var connection in wp.Connections)
+                foreach (var connection in wp.Connections)
                 {
                     //
                     var fsm1 = new FSM();
@@ -65,11 +65,12 @@ namespace FSMController
                     int index1 = fsm1.AddState(state1);
                     int index2 = fsm1.AddState(state2);
 
-                    fsm1.AddTransition(index1, -2, state1.GetExitGuard("Arrived"),null, () => { return 30;});
-                    fsm1.AddTransition(index1, index2, state1.GetExitGuard("Arrived"),null, () => { return 70;});
+                    fsm1.AddTransition(index1, -2, state1.GetExitGuard("Arrived"), null, () => { return 30; });
+                    fsm1.AddTransition(index1, index2, state1.GetExitGuard("Arrived"), null, () => { return 70; });
                     fsm1.AddTransition(index2, -2, state2.GetExitGuard("TimeOut"));
 
                     _fsm.AddLeaf(new LeafFSM(fsm1));
+                    Debug.Log("LEAFFSM ADDED");
                 }
             }
 
@@ -127,11 +128,6 @@ namespace FSMController
                     wp.TryAddConnection(other);
                 }
             }
-        }
-
-        public void IntelligentPatrole()
-        {
-
         }
     }
 }

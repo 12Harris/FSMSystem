@@ -116,13 +116,15 @@ namespace Harris.GPC
 				Transition t = ctx.transitions[i];
 				if (t.weight.Invoke() > 0f)
 				{
+					Debug.Log("weight > 0");
 					exitState = GetRandomExit(_currentState);
 					stop = true;
 				}
 			}
 
-			if(exitState == -1)
+			if(exitState == -1 && stop == false)
 			{
+				Debug.Log("exit state = -1");
 				// check if state has available exits
 				exitState = GetAvailableExit(_currentState);
 			}
@@ -139,6 +141,8 @@ namespace Harris.GPC
 				m_oldState = oldState?.state;
 
 				_onFinished?.Invoke(this);
+				_currentState = 0;//IMportant, upon entering this fsm again we want to start at the first state
+				Debug.Log("atomic fsm finished!");
 				return;
 
 			}

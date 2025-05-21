@@ -17,7 +17,7 @@ namespace FSMController
 
         public IdleState(IntelligentBot bot)
         {
-            AddExitGuard("TimeOut", () => { return _timer > 2.0f; });
+            AddExitGuard("TimeOut", () => { return _timer > 1.0f; });
             _bot = bot;
         }
 
@@ -32,13 +32,19 @@ namespace FSMController
         {
             _timer += dt;
             Debug.Log("Ticking idle state!");
+            Debug.Log("Timer: " + _timer);
         }
 
+
+        public override void Exit()
+        {
+            Debug.Log("exiting idle state");
+        }
         public override string ToFile(string fileName, int level)
         {
             _saveData = ScriptableObject.CreateInstance<IdleFSMData>();
             _saveData._idleDuration = 2.0f;
-            string json = JsonUtility.ToJson(_saveData ,true);
+            string json = JsonUtility.ToJson(_saveData, true);
 
             //reformat the json to match current indentation level
             string[] lines = json.Split(
@@ -47,7 +53,7 @@ namespace FSMController
             );
 
             string res = "";
-            foreach(var line in lines)
+            foreach (var line in lines)
             {
                 Debug.Log("LINE: " + line);
                 res += indent(level) + line + "\n";
@@ -110,12 +116,12 @@ namespace FSMController
             v.y = _start.transform.position.y;
 
             var distanceToDestination = Vector3.Distance(v, _end.transform.position);
-            _arrived = distanceToDestination < 0.1f;
+            _arrived = distanceToDestination < 0.2f;
 
             if (_arrived)
                 return;
 
-            _bot.gameObject.GetComponent<Rigidbody>().linearVelocity = (_end.transform.position - v).normalized * 5.0f;
+            _bot.gameObject.GetComponent<Rigidbody>().linearVelocity = (_end.transform.position - v).normalized * 20.0f;
         }
         public override void Exit()
         {
@@ -267,6 +273,7 @@ namespace FSMController
 
             else
             {
+                Debug.Log("huch composite aborted...");
                 var rand = UnityEngine.Random.Range(0,(list[current] as LeafFSM).Transitions.Count);
                 current = (list[current] as LeafFSM).Transitions[rand];
             }
@@ -278,10 +285,13 @@ namespace FSMController
             //.Log("Current: " + current);
 
             //if(list[current] == null)
-                //Debug.Log("Current is null!");
+            //Debug.Log("Current is null!");
 
-            if(!finished)
+            if (!finished)
+            {
                 list[current].Update();
+                Debug.Log("CURRENT STATE INDEX = " + current);
+            }
         }
 
         public string ToFile(string fileName, int level)
@@ -354,6 +364,7 @@ namespace FSMController
             if(fsm != Name)
                 return;
 
+            Debug.Log("Leaf fsm aborted!");
             //this state machine finished, so signal it to its parent
             _onFinished?.Invoke(this as IComponent<FSM>);
         }
@@ -361,6 +372,7 @@ namespace FSMController
         public override void Update()
         {
             Name.Tick(Time.deltaTime);
+
         }
 
         public string ToFile(string fileName, int level)
@@ -428,15 +440,15 @@ namespace FSMController
         // Update is called once per frame
         public void Update()
         {
-            if(_root == null)
+            if (_root == null)
                 Debug.Log("Error root is null");
 
             else
                 Debug.Log("root is valid");
 
-            if(_root.list.Count == 0)
+            if (_root.list.Count == 0)
                 return;
-                
+
             _root.list[current].Update();
         }
 
