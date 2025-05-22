@@ -5,6 +5,8 @@ namespace FSMController
 	using System.Collections.Generic;
 	using UnityEngine;
 
+
+	[ExecuteAlways]
 	[AddComponentMenu("Pathfinding/Connected Waypoint")]
 	public partial class ConnectedWaypoint : Waypoint
 	{
@@ -19,7 +21,7 @@ namespace FSMController
             //public static bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction); 
             var result = Physics.Raycast(transform.position+Vector3.up*0.5f,other.transform.position-transform.position, out hit);
 
-            if(result == false)
+            if(result == false && !_connections.Contains(other))
             {
                 _connections.Add(other);
                 other.Connections.Add(this);

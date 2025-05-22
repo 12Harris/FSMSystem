@@ -8,6 +8,11 @@ using UnityEditor.ProjectWindowCallback;
 namespace FSMController
 {
 
+    interface IFSMOwner
+    {
+        
+    }
+
     class IdleState : FSM_State
     {
 
@@ -17,7 +22,7 @@ namespace FSMController
 
         public IdleState(IntelligentBot bot)
         {
-            AddExitGuard("TimeOut", () => { return _timer > 1.0f; });
+            AddExitGuard("TimeOut", () => { return _timer > 2.0f; });
             _bot = bot;
         }
 
@@ -67,9 +72,9 @@ namespace FSMController
         private string indent(int level)
         {
             string s = "";
-            string indentation = "    ";        
-            for(int i = 0; i < level; i++)
-                s+=indentation;
+            string indentation = "    ";
+            for (int i = 0; i < level; i++)
+                s += indentation;
             return s;
         }
 
@@ -121,7 +126,7 @@ namespace FSMController
             if (_arrived)
                 return;
 
-            _bot.gameObject.GetComponent<Rigidbody>().linearVelocity = (_end.transform.position - v).normalized * 20.0f;
+            _bot.gameObject.GetComponent<Rigidbody>().linearVelocity = (_end.transform.position - v).normalized * 10.0f;
         }
         public override void Exit()
         {

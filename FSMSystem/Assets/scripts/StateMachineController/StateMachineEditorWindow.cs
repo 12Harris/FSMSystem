@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEditor;
 using Harris.GPC;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FSMController
 {
@@ -9,8 +11,12 @@ namespace FSMController
     public class StateMachineEditorWindow: EditorWindow
     {
         private StateMachineController _fsmController;
+        public StateMachineController FSMController{ get => _fsmController; set => _fsmController = value; }
         private Vector2 _hierarchy_offset = Vector2.zero;
         private static IComponent<FSM> _selectedEntry = null;
+
+        public static StateMachineEditorWindow Instance;
+
 
         //GUIUtility.ScreenToGUIPoint(screenPos);
 
@@ -21,14 +27,17 @@ namespace FSMController
 
         private void OnEnable()
         {
-            if(_fsmController == null)
+            /*if (_fsmController == null)
             {
                 Debug.Log("finding fsm controller!");
-                _fsmController = GameObject.Find("FSMController").GetComponent<StateMachineController>(); // Replace "MyGameObject"
+                _fsmController = GameObject.Find("IntelligentBot").GetComponent<StateMachineController>(); // Replace "MyGameObject"
             }
 
             _fsmController.Root.AssignLevels(0);
-            _fsmController.Root.GenerateID(0);
+            _fsmController.Root.GenerateID(0);*/
+
+            if (Instance == null)
+                Instance = this;
 
             Vector2 _hierarchy_offset = new Vector2(50,20);
         }
@@ -98,16 +107,99 @@ namespace FSMController
 
         private void OnGUI()
         {
-            Debug.Log("root: " +_fsmController.Root );
-            ShowHieararchy(_fsmController.Root, _hierarchy_offset,0);
 
             var _mouseGUICoords = UnityEngine.Event.current.mousePosition;
             //var _mouseGUICoords = GUIUtility.ScreenToGUIPoint(Input.mousePosition);
 
-            if(_mouseGUICoords.x < 100 && _mouseGUICoords.y < 400)
+            if (_mouseGUICoords.x < 100 && _mouseGUICoords.y < 400)
             {
-                _selectedEntry= GetEntry(_mouseGUICoords);  
+                _selectedEntry = GetEntry(_mouseGUICoords);
             }
+
+            GUIContent temp = new GUIContent();
+
+            //Display FSMOwners
+            temp.text = "Choose FSM Owner";
+            DisplayFSMOwnersDropdown(new Rect(150, 5, 150, 20), temp);
+
+            //Draw Template FSM Dropdown
+            if (_fsmController == null)
+                return;
+
+            Debug.Log("root: " + _fsmController.Root);
+            ShowHieararchy(_fsmController.Root, _hierarchy_offset, 0);
+
+            //GUIContent temp = new GUIContent();
+            temp.text = "Choose FSM Template";
+            DrawTemplateFSMDropdown(new Rect(350, 5, 150, 20), temp);
+
+        }
+        
+
+        public static void DrawTemplateFSMDropdown(Rect position, GUIContent label)
+        {
+            if (!EditorGUI.DropdownButton(position, label, FocusType.Passive))
+            {
+                return;
+            }
+
+            void handleItemClicked(object parameter)
+            {
+                Debug.Log(parameter);
+            }
+
+            GenericMenu menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Advanced Patrole FSM"), false, handleItemClicked, "Advanced Patrole FSM");
+            menu.AddItem(new GUIContent("Item 2"), false, handleItemClicked, "Item 2");
+            menu.AddItem(new GUIContent("Item 3"), false, handleItemClicked, "Item 3");
+            menu.DropDown(position);
+        }
+        
+
+        public static void HandleFSMOwnerChosen(object fsmController)
+        {
+ 
+            Instance.FSMController = fsmController as StateMachineController;
+            if (Instance.FSMController != null)
+            {
+                Instance.FSMController.Root.AssignLevels(0);
+                Instance.FSMController.Root.GenerateID(0);
+            }
+        }
+
+        public static void DisplayFSMOwnersDropdown(Rect position, GUIContent label)
+        {
+            if (!EditorGUI.DropdownButton(position, label, FocusType.Passive))
+            {
+                return;
+            }
+
+            GenericMenu menu = new GenericMenu();
+
+            //Grab all state machine owners in scene
+            Dictionary<GameObject, StateMachineController> scriptsDict = GetAllStateMachineOwners();
+
+            foreach (KeyValuePair<GameObject, StateMachineController> kvp in scriptsDict)
+            {
+                menu.AddItem(new GUIContent(kvp.Key.name), false, HandleFSMOwnerChosen, kvp.Value);
+            }
+            menu.AddItem(new GUIContent("None"), false, HandleFSMOwnerChosen, null);
+
+            menu.DropDown(position);
+        }
+
+        public static Dictionary<GameObject, StateMachineController> GetAllStateMachineOwners()
+        {
+            Dictionary<GameObject, StateMachineController> scriptsDict = new();
+            var allGameObjects = UnityEngine.Object.FindObjectsOfType<GameObject>();
+            foreach (var go in allGameObjects)
+            {
+                var stateMachine = go.GetComponent<StateMachineController>();
+
+                if (stateMachine != null)
+                    scriptsDict.Add(go, stateMachine);
+            }
+            return scriptsDict;
         }
 
         public IComponent<FSM> GetEntry(Vector2 mousePos)
@@ -117,16 +209,16 @@ namespace FSMController
             var arr = CompositeFSM.ToArray(_fsmController.Root);
 
             //calculate index in hierarchy from mouseposy
-            var mouseRelativeY = mousePos.y-_hierarchy_offset.y;
+            var mouseRelativeY = mousePos.y - _hierarchy_offset.y;
 
-            int index = (int)mouseRelativeY/20;
+            int index = (int)mouseRelativeY / 20;
 
-            if(index >= arr.Count) 
+            if (index >= arr.Count)
                 return null;
 
             //return arr[index];
 
-            if(mousePos.x > arr[index].Level*20 && mousePos.x < arr[index].Level*20 + 50)
+            if (mousePos.x > arr[index].Level * 20 && mousePos.x < arr[index].Level * 20 + 50)
                 return arr[index];
 
             Debug.Log("INDEX = " + index);

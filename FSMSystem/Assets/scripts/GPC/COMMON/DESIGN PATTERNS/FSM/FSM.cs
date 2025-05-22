@@ -142,7 +142,6 @@ namespace Harris.GPC
 
 				_onFinished?.Invoke(this);
 				_currentState = 0;//IMportant, upon entering this fsm again we want to start at the first state
-				Debug.Log("atomic fsm finished!");
 				return;
 
 			}
