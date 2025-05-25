@@ -3,20 +3,40 @@ using UnityEditor;
 using Harris.GPC;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
+using UnityEngine.Rendering;
 
 namespace FSMController
 {
     //NOTES: GUI COORDINATES (0,0) represents the top-left corner and Y increases downwards.
 
-    public class StateMachineEditorWindow: EditorWindow
+    public class SelectedEntry
+    {
+        public Rect _rect;
+        public Texture2D _tex;
+        public bool _sel;
+
+        public SelectedEntry(Rect r, Texture2D t)
+        {
+            _rect = r;
+            _tex = t;
+            _sel = false;
+        }
+    }
+
+    public class StateMachineEditorWindow : EditorWindow
     {
         private StateMachineController _fsmController;
-        public StateMachineController FSMController{ get => _fsmController; set => _fsmController = value; }
+        public StateMachineController FSMController { get => _fsmController; set => _fsmController = value; }
         private Vector2 _hierarchy_offset = Vector2.zero;
         private static IComponent<FSM> _selectedEntry = null;
 
         public static StateMachineEditorWindow Instance;
-
+        private Texture2D _selectedEntryIndicatorResource;
+        public Texture2D SelectedEntryIndicatorResource => _selectedEntryIndicatorResource;
+        private List<SelectedEntry> _selectedEntries = new List<SelectedEntry>();
+        public List<SelectedEntry> SelectedEntries => _selectedEntries;
+        private static int current = 0;
 
         //GUIUtility.ScreenToGUIPoint(screenPos);
 
@@ -27,19 +47,13 @@ namespace FSMController
 
         private void OnEnable()
         {
-            /*if (_fsmController == null)
-            {
-                Debug.Log("finding fsm controller!");
-                _fsmController = GameObject.Find("IntelligentBot").GetComponent<StateMachineController>(); // Replace "MyGameObject"
-            }
-
-            _fsmController.Root.AssignLevels(0);
-            _fsmController.Root.GenerateID(0);*/
-
             if (Instance == null)
                 Instance = this;
 
-            Vector2 _hierarchy_offset = new Vector2(50,20);
+            if (_selectedEntryIndicatorResource == null)
+                _selectedEntryIndicatorResource = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/Textures/selector_right.svg", typeof(Texture2D));
+
+            Vector2 _hierarchy_offset = new Vector2(50, 20);
         }
 
 
@@ -51,38 +65,44 @@ namespace FSMController
 
         public static void ShowHieararchy(IComponent<FSM> node, Vector2 pos, int level)
         {
-            
+
             string label = "";
 
-            if(node is CompositeFSM)
+            if (node is CompositeFSM)
             {
-                label = (node as CompositeFSM).ID.ToString()+ " " +(node as CompositeFSM).Desc;
-                //label = level.ToString()+ " " +(node as CompositeFSM).Desc;
+                //label = (node as CompositeFSM).ID.ToString() + " " + (node as CompositeFSM).Desc;
+                label = (node as CompositeFSM).Desc;
+
             }
             else
             {
-                label = (node as LeafFSM).ID.ToString()+ " " +(node as LeafFSM).Desc;
-                //label = level.ToString()+ " " +(node as LeafFSM).Desc;
+                label = (node as LeafFSM).Desc;
             }
 
-            if(node == _selectedEntry)
+            if (node == _selectedEntry)
             {
                 GUIStyle style = new GUIStyle();
                 style.fontStyle = FontStyle.Bold;
-                GUI.Label(new Rect(pos, new Vector2(200,20)), label, style);               
+                GUI.Label(new Rect(pos, new Vector2(200, 20)), label, style);
             }
             else
             {
-                GUI.Label(new Rect(pos, new Vector2(200,20)), label);
+                GUI.Label(new Rect(pos, new Vector2(200, 20)), label);
             }
-            
-            if(node is CompositeFSM)
+
+
+            Instance.SelectedEntries[current]._rect = new Rect(20 * level, pos.y+5, 10, 10);
+            GUI.DrawTexture(Instance.SelectedEntries[current]._rect, Instance.SelectedEntries[current]._tex, ScaleMode.ScaleToFit, true, 1.0F);
+
+
+            if (node is CompositeFSM)
             {
-                foreach(var component in (node as CompositeFSM).list)
+                foreach (var component in (node as CompositeFSM).list)
                 {
                     //pos = pos + new Vector2(0,20);
-                    pos = new Vector2(20 * (level+1),pos.y+20);
-                    ShowHieararchy(component, pos, level+1);
+                    current++;
+                    pos = new Vector2(20 * (level + 1) + 15, pos.y + 20);
+                    ShowHieararchy(component, pos, level + 1);
                 }
             }
 
@@ -127,14 +147,14 @@ namespace FSMController
                 return;
 
             Debug.Log("root: " + _fsmController.Root);
+            current = 0;
             ShowHieararchy(_fsmController.Root, _hierarchy_offset, 0);
 
             //GUIContent temp = new GUIContent();
             temp.text = "Choose FSM Template";
             DrawTemplateFSMDropdown(new Rect(350, 5, 150, 20), temp);
-
         }
-        
+
 
         public static void DrawTemplateFSMDropdown(Rect position, GUIContent label)
         {
@@ -154,16 +174,27 @@ namespace FSMController
             menu.AddItem(new GUIContent("Item 3"), false, handleItemClicked, "Item 3");
             menu.DropDown(position);
         }
-        
+
 
         public static void HandleFSMOwnerChosen(object fsmController)
         {
- 
+
             Instance.FSMController = fsmController as StateMachineController;
             if (Instance.FSMController != null)
             {
                 Instance.FSMController.Root.AssignLevels(0);
                 Instance.FSMController.Root.GenerateID(0);
+
+                var arr = CompositeFSM.ToArray(Instance.FSMController.Root);
+
+                if (Instance.SelectedEntries.Count == 0)
+                {
+                    for (int i = 0; i < arr.Count; i++)
+                    {
+                        Instance.SelectedEntries.Add(new SelectedEntry(new Rect(0, 0, 0, 0), Instance.SelectedEntryIndicatorResource));
+                    }
+                }
+                Instance.SelectedEntries[0]._sel = true;
             }
         }
 
@@ -208,6 +239,15 @@ namespace FSMController
 
             var arr = CompositeFSM.ToArray(_fsmController.Root);
 
+            /*for (int i = 0; i < arr.Count; i++)
+            {
+                if (_selectedEntries[i]._sel == true)
+                    continue;
+                _selectedEntries[i]._sel = false;
+            }
+            if (_selectedEntries[0]._sel == false)
+                _selectedEntries[0]._sel = true;*/
+
             //calculate index in hierarchy from mouseposy
             var mouseRelativeY = mousePos.y - _hierarchy_offset.y;
 
@@ -229,9 +269,9 @@ namespace FSMController
 
         private void Update()
         {
-            if(_selectedEntry!= null)
+            if (_selectedEntry != null)
             {
-                if(_selectedEntry is LeafFSM)
+                if (_selectedEntry is LeafFSM)
                     Debug.Log("Selected Entry: " + (_selectedEntry as LeafFSM).Desc);
                 else
                     Debug.Log("Selected Entry: " + (_selectedEntry as CompositeFSM).Desc);
