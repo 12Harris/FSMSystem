@@ -90,7 +90,7 @@ namespace FSMController
                 GUI.Label(new Rect(pos, new Vector2(200, 20)), label);
             }
 
-
+    
             Instance.SelectedEntries[current]._rect = new Rect(20 * level, pos.y+5, 10, 10);
             GUI.DrawTexture(Instance.SelectedEntries[current]._rect, Instance.SelectedEntries[current]._tex, ScaleMode.ScaleToFit, true, 1.0F);
 
