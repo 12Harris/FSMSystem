@@ -3,8 +3,7 @@ using UnityEditor;
 using Harris.GPC;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
-using UnityEngine.Rendering;
+using System;
 
 namespace FSMController
 {
@@ -15,12 +14,14 @@ namespace FSMController
         public Rect _rect;
         public Texture2D _tex;
         public bool _sel;
+        IComponent<FSM> _comp;
 
-        public SelectedEntry(Rect r, Texture2D t)
+        public SelectedEntry(Rect r, Texture2D t, IComponent<FSM> comp)
         {
             _rect = r;
             _tex = t;
             _sel = false;
+            _comp = comp;
         }
     }
 
@@ -30,13 +31,20 @@ namespace FSMController
         public StateMachineController FSMController { get => _fsmController; set => _fsmController = value; }
         private Vector2 _hierarchy_offset = Vector2.zero;
         private static IComponent<FSM> _selectedEntry = null;
+        private static int _selectedEntryIndex = -1;
 
+        //private static int _selectedEntry =
         public static StateMachineEditorWindow Instance;
         private Texture2D _selectedEntryIndicatorResource;
         public Texture2D SelectedEntryIndicatorResource => _selectedEntryIndicatorResource;
+
+        private Texture2D _selectedEntryIndicatorResource2;
+        public Texture2D SelectedEntryIndicatorResource2 => _selectedEntryIndicatorResource2;
         private List<SelectedEntry> _selectedEntries = new List<SelectedEntry>();
         public List<SelectedEntry> SelectedEntries => _selectedEntries;
         private static int current = 0;
+        private bool _leftMousePressed = false;
+        private Vector2 _mouseGUICoords = Vector2.zero;
 
         //GUIUtility.ScreenToGUIPoint(screenPos);
 
@@ -52,6 +60,9 @@ namespace FSMController
 
             if (_selectedEntryIndicatorResource == null)
                 _selectedEntryIndicatorResource = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/Textures/selector_right.svg", typeof(Texture2D));
+
+            if (_selectedEntryIndicatorResource2 == null)
+                _selectedEntryIndicatorResource2 = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/Textures/selector_down.svg", typeof(Texture2D));
 
             Vector2 _hierarchy_offset = new Vector2(50, 20);
         }
@@ -92,10 +103,18 @@ namespace FSMController
 
     
             Instance.SelectedEntries[current]._rect = new Rect(20 * level, pos.y+5, 10, 10);
-            GUI.DrawTexture(Instance.SelectedEntries[current]._rect, Instance.SelectedEntries[current]._tex, ScaleMode.ScaleToFit, true, 1.0F);
-
 
             if (node is CompositeFSM)
+            {
+                if (Instance.SelectedEntries[current]._sel)
+                    Instance.SelectedEntries[current]._tex = Instance.SelectedEntryIndicatorResource2;
+                else
+                    Instance.SelectedEntries[current]._tex = Instance.SelectedEntryIndicatorResource;
+            }
+            
+            GUI.DrawTexture(Instance.SelectedEntries[current]._rect, Instance.SelectedEntries[current]._tex, ScaleMode.ScaleToFit, true, 1.0F);
+
+            if (node is CompositeFSM && Instance.SelectedEntries[current]._sel)
             {
                 foreach (var component in (node as CompositeFSM).list)
                 {
@@ -105,36 +124,29 @@ namespace FSMController
                     ShowHieararchy(component, pos, level + 1);
                 }
             }
-
-            /*var arr = CompositeFSM.ToArray(node as CompositeFSM);
-            label = (node as Composite<FSM>).ID.ToString()+ " " +(node as CompositeFSM).Desc;
-
-            foreach(var item in arr)
-            {
-                if(item is CompositeFSM)
-                {
-                    label = (item as Composite<FSM>).ID.ToString()+ " " +(item as CompositeFSM).Desc;
-                }
-                else
-                {
-                    label = (item as Component<FSM>).ID.ToString()+ " " +(item as LeafFSM).Desc;
-                }
-                pos =pos + new Vector2(0,50);
-                GUI.Label(new Rect(pos, new Vector2(200,20)), label);
-            }*/
-
         }
 
         private void OnGUI()
         {
 
-            var _mouseGUICoords = UnityEngine.Event.current.mousePosition;
-            //var _mouseGUICoords = GUIUtility.ScreenToGUIPoint(Input.mousePosition);
+            _mouseGUICoords = UnityEngine.Event.current.mousePosition;
 
             if (_mouseGUICoords.x < 100 && _mouseGUICoords.y < 400)
             {
                 _selectedEntry = GetEntry(_mouseGUICoords);
             }
+
+
+            if (UnityEngine.Event.current.type == EventType.MouseDown && UnityEngine.Event.current.button == 0)
+            {
+                _leftMousePressed = true;
+            }
+            if (_leftMousePressed && UnityEngine.Event.current.type == EventType.MouseUp && UnityEngine.Event.current.button == 0)
+            {
+                _leftMousePressed = false;
+                OnLeftMouseReleased();
+            }
+
 
             GUIContent temp = new GUIContent();
 
@@ -153,6 +165,14 @@ namespace FSMController
             //GUIContent temp = new GUIContent();
             temp.text = "Choose FSM Template";
             DrawTemplateFSMDropdown(new Rect(350, 5, 150, 20), temp);
+        }
+
+        public void OnLeftMouseReleased()
+        {
+            Debug.Log("OKI PRESSED");
+
+            if(_selectedEntryIndex >= 0)
+            _selectedEntries[_selectedEntryIndex]._sel = !_selectedEntries[_selectedEntryIndex]._sel;
         }
 
 
@@ -191,7 +211,7 @@ namespace FSMController
                 {
                     for (int i = 0; i < arr.Count; i++)
                     {
-                        Instance.SelectedEntries.Add(new SelectedEntry(new Rect(0, 0, 0, 0), Instance.SelectedEntryIndicatorResource));
+                        Instance.SelectedEntries.Add(new SelectedEntry(new Rect(0, 0, 0, 0), Instance.SelectedEntryIndicatorResource,arr[i]));
                     }
                 }
                 Instance.SelectedEntries[0]._sel = true;
@@ -256,10 +276,17 @@ namespace FSMController
             if (index >= arr.Count)
                 return null;
 
+            //if (mousePos.x > arr[index].Level * 20 && mousePos.x < arr[index].Level * 20 + 10)
             //return arr[index];
 
-            if (mousePos.x > arr[index].Level * 20 && mousePos.x < arr[index].Level * 20 + 50)
+            _selectedEntryIndex = -1;
+
+            if (_selectedEntries[index]._rect.Contains(UnityEngine.Event.current.mousePosition))
+            {
+
+                _selectedEntryIndex = index;
                 return arr[index];
+            }
 
             Debug.Log("INDEX = " + index);
             Debug.Log("LEVEL = " + arr[index].Level);
@@ -275,7 +302,10 @@ namespace FSMController
                     Debug.Log("Selected Entry: " + (_selectedEntry as LeafFSM).Desc);
                 else
                     Debug.Log("Selected Entry: " + (_selectedEntry as CompositeFSM).Desc);
+                
             }
+
+            
             Repaint();
         }
 

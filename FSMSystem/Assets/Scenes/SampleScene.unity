@@ -711,8 +711,8 @@ GameObject:
   - component: {fileID: 936051971}
   - component: {fileID: 936051970}
   - component: {fileID: 936051976}
-  - component: {fileID: 936051975}
   - component: {fileID: 936051974}
+  - component: {fileID: 936051977}
   m_Layer: 0
   m_Name: IntelligentBot
   m_TagString: Untagged
@@ -836,18 +836,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!114 &936051975
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 936051969}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d64ce4f076d2de64e96e2458d375b517, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &936051976
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -865,6 +853,18 @@ MonoBehaviour:
   - {fileID: 1695926379}
   - {fileID: 455988580}
   - {fileID: 1135565694}
+--- !u!114 &936051977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 936051969}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d64ce4f076d2de64e96e2458d375b517, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1135565693
 GameObject:
   m_ObjectHideFlags: 0
