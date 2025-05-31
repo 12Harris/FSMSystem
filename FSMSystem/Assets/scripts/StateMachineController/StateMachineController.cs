@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEditor.ProjectWindowCallback;
+using System.Linq;
 
 namespace FSMController
 {
@@ -47,6 +48,7 @@ namespace FSMController
         }
         public override string ToFile(string fileName, int level)
         {
+            int j = 1;
             _saveData = ScriptableObject.CreateInstance<IdleFSMData>();
             _saveData._idleDuration = 2.0f;
             string json = JsonUtility.ToJson(_saveData, true);
@@ -61,24 +63,16 @@ namespace FSMController
             foreach (var line in lines)
             {
                 Debug.Log("LINE: " + line);
-                res += indent(level) + line + "\n";
+                res += indent(level) + line;
+                if (j < lines.Length)
+                    res += "\n";
+                j++;
             }
 
             return res;
 
             //return json;
         }
-
-        private string indent(int level)
-        {
-            string s = "";
-            string indentation = "    ";
-            for (int i = 0; i < level; i++)
-                s += indentation;
-            return s;
-        }
-
-
     }
 
     public class MoveToLocationState : FSM_State
@@ -135,6 +129,7 @@ namespace FSMController
 
         public override string ToFile(string fileName, int level)
         {
+            int j = 1;
             _saveData = ScriptableObject.CreateInstance<MoveToLocationFSMData>();
             _saveData._from = _start.transform.position;
             _saveData._to = _end.transform.position;
@@ -150,22 +145,15 @@ namespace FSMController
             foreach(var line in lines)
             {
                 Debug.Log("LINE: " + line);
-                res += indent(level) + line + "\n";
+                res += indent(level) + line;
+                if (j < lines.Length)
+                    res += "\n";
+                j++;
             }
 
             return res;
             //return json;
         }
-
-        private string indent(int level)
-        {
-            string s = "";
-            string indentation = "    ";        
-            for(int i = 0; i < level; i++)
-                s+=indentation;
-            return s;
-        }
-
     }
 
     [Serializable]
@@ -315,14 +303,24 @@ namespace FSMController
             {
                 res += indent(level);
                 res += indent(1);//indent one level in addition
-                    
                 res += "\"child" + j + "\":\n";
 
+                res += indent(level);
+                res += indent(1);//indent one level in addition
+                res += "{\n";
+
                 if (comp is CompositeFSM)
-                    res +=  (comp as CompositeFSM).ToFile(fileName, level+1);
+                    res += (comp as CompositeFSM).ToFile(fileName, level + 2);
                 else
-                    res +=  (comp as LeafFSM).ToFile(fileName, level+1);
-                
+                    res += (comp as LeafFSM).ToFile(fileName, level + 2);
+
+                res += indent(level);
+                res += indent(1);//indent one level in addition
+
+                if (j < list.Count)
+                    res += "},\n";
+                else
+                    res += "}\n";
                 j++;
             }
 
@@ -333,7 +331,7 @@ namespace FSMController
         private string indent(int level)
         {
             string s = "";
-            string indentation = "    ";        
+            string indentation = "\t";        
             for(int i = 0; i < level; i++)
                 s+=indentation;
             return s;
@@ -368,8 +366,6 @@ namespace FSMController
         {
             if(fsm != Name)
                 return;
-
-            Debug.Log("Leaf fsm aborted!");
             //this state machine finished, so signal it to its parent
             _onFinished?.Invoke(this as IComponent<FSM>);
         }
@@ -389,14 +385,12 @@ namespace FSMController
             res += Name.ToFile(fileName, level);
 
             return res;
-
-            //return Name.ToFile(fileName);
         }
 
         private string indent(int level)
         {
             string s = "";
-            string indentation = "    ";        
+            string indentation = "\t";        
             for(int i = 0; i < level; i++)
                 s+=indentation;
             return s;
@@ -434,10 +428,7 @@ namespace FSMController
         public void Initialize()
         {
 
-            Debug.Log("INITIALIZE");
             _executingLeaf = _root.Start() as LeafFSM;//Find first leaf component and enter its state machine
-
-            Debug.Log("Start is: " + _executingLeaf);
 
             _executingLeaf.Name.SetState(0);
         }
@@ -445,12 +436,6 @@ namespace FSMController
         // Update is called once per frame
         public void Update()
         {
-            if (_root == null)
-                Debug.Log("Error root is null");
-
-            else
-                Debug.Log("root is valid");
-
             if (_root.list.Count == 0)
                 return;
 
@@ -461,7 +446,7 @@ namespace FSMController
         {
             //int i = 45;
             //ObjectSerializer.SerializeObject(i, filename);
-            return (Root as CompositeFSM).ToFile(filename,0);
+            return "{\n" + Root.ToFile(filename,1) + "}\n";
         }
 
 
@@ -475,33 +460,3 @@ namespace FSMController
         }
     }
 }
-
-
-
-/*
-    public class StateMachineController : MonoBehaviour
-    {
-        
-        //Compound Patrole state
-        private IComponent <FSM> _compositePatrole = new Composite<FSM> (null);
-        private int current = 0;
-
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
-        void Start()
-        {
-            PatroleFSM _patrole1 = new PatroleFSM();
-
-            _compositePatrole.Add(_patrole1);
-
-            var start = _compositePatrole.Start();//Find first leaf component and enter its state machine
-            start.Name.SetState(0);
-            //start.Name.CurrentState.Enter();
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
-            ((_compositePatrole as Composite<FSM>).list[current] as PatroleFSM).Update();
-        }
-    }
-*/

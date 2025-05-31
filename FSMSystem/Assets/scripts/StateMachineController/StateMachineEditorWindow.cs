@@ -90,7 +90,7 @@ namespace FSMController
                 label = (node as LeafFSM).Desc;
             }
 
-            if (node == _selectedEntry)
+            /*if (node == _selectedEntry)
             {
                 GUIStyle style = new GUIStyle();
                 style.fontStyle = FontStyle.Bold;
@@ -99,7 +99,8 @@ namespace FSMController
             else
             {
                 GUI.Label(new Rect(pos, new Vector2(200, 20)), label);
-            }
+            }*/
+            GUI.Label(new Rect(pos, new Vector2(200, 20)), label);
 
     
             Instance.SelectedEntries[current]._rect = new Rect(20 * level, pos.y+5, 10, 10);
@@ -110,9 +111,11 @@ namespace FSMController
                     Instance.SelectedEntries[current]._tex = Instance.SelectedEntryIndicatorResource2;
                 else
                     Instance.SelectedEntries[current]._tex = Instance.SelectedEntryIndicatorResource;
+
+                GUI.DrawTexture(Instance.SelectedEntries[current]._rect, Instance.SelectedEntries[current]._tex, ScaleMode.ScaleToFit, true, 1.0F);
             }
             
-            GUI.DrawTexture(Instance.SelectedEntries[current]._rect, Instance.SelectedEntries[current]._tex, ScaleMode.ScaleToFit, true, 1.0F);
+            //GUI.DrawTexture(Instance.SelectedEntries[current]._rect, Instance.SelectedEntries[current]._tex, ScaleMode.ScaleToFit, true, 1.0F);
 
             if (node is CompositeFSM && Instance.SelectedEntries[current]._sel)
             {
@@ -259,15 +262,6 @@ namespace FSMController
 
             var arr = CompositeFSM.ToArray(_fsmController.Root);
 
-            /*for (int i = 0; i < arr.Count; i++)
-            {
-                if (_selectedEntries[i]._sel == true)
-                    continue;
-                _selectedEntries[i]._sel = false;
-            }
-            if (_selectedEntries[0]._sel == false)
-                _selectedEntries[0]._sel = true;*/
-
             //calculate index in hierarchy from mouseposy
             var mouseRelativeY = mousePos.y - _hierarchy_offset.y;
 
@@ -275,9 +269,6 @@ namespace FSMController
 
             if (index >= arr.Count)
                 return null;
-
-            //if (mousePos.x > arr[index].Level * 20 && mousePos.x < arr[index].Level * 20 + 10)
-            //return arr[index];
 
             _selectedEntryIndex = -1;
 

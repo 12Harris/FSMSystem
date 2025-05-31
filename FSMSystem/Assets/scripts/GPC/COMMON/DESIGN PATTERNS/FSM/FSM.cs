@@ -147,16 +147,6 @@ namespace Harris.GPC
 			}
 		}
 
-		/*public T GetState<T>() where T : FSM_State
-		{
-			//return GetFirstExact<T>();
-			foreach (var s in _states)
-			{
-				if (s.state is T) { return s.state as T; }
-			}
-			return null;
-		}*/
-
 		/// <summary>
 		/// Late Update execution
 		/// </summary>
@@ -347,14 +337,22 @@ namespace Harris.GPC
 			res = indent(level) + "\"states\":\n";
 			res += indent(level) + "{\n";
 
-			foreach(var boundState in _states)
+			int j = 1;
+			foreach (var boundState in _states)
 			{
 
 				res += indent(level);
-                res += indent(1);//indent one level in addition
-				res += "\"state\":\n";
+				res += indent(1);//indent one level in addition
+				res += "\"state" + j + "\":\n";
 
-				res += boundState.state.ToFile(fileName, level+1);
+				res += boundState.state.ToFile(fileName, level + 1);
+
+				if (j < _states.Count)
+					res += ",\n";
+				else
+					res += "\n";
+
+				j++;
 
 			}
 
@@ -365,7 +363,7 @@ namespace Harris.GPC
 		private string indent(int level)
         {
             string s = "";
-            string indentation = "    ";        
+            string indentation = "\t";        
             for(int i = 0; i < level; i++)
                 s+=indentation;
             return s;
@@ -423,6 +421,15 @@ namespace Harris.GPC
 		{
 			return "";
 		}
+
+		protected string indent(int level)
+        {
+            string s = "";
+            string indentation = "    ";        
+            for(int i = 0; i < level; i++)
+                s+=indentation;
+            return s;
+        }
 	}
 }
 
