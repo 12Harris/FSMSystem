@@ -155,7 +155,7 @@ namespace Harris.GPC
             return start;
         }
 
-        public void GenerateID(int id)
+        /*public void GenerateID(int id)
         {
             ID = id;
             
@@ -176,7 +176,38 @@ namespace Harris.GPC
 
             Count = i;
             
+        }*/
+
+
+        public int GenerateID(int id)
+        {
+            ID = id;
+
+            int l = id;
+
+            Debug.Log("assigned id : " + ID);
+
+            foreach (IComponent<T> component in list)
+            {
+
+                if (component is Composite<T>)
+                {
+                    l += (component as Composite<T>).GenerateID(l + 1) + 1;
+                    Count += l;
+
+                }
+                else
+                {
+                    l++;
+                    (component as Component<T>).GenerateID(l);
+                }
+
+            }
+            //return list.Count;
+            return l - id;
+
         }
+
 
         public void AssignLevels(int level)
         {
@@ -184,8 +215,10 @@ namespace Harris.GPC
 
             Debug.Log("assigned level = " + level);
 
-            foreach (IComponent <T> component in list) {
-                component.AssignLevels(level+1);
+            foreach (IComponent<T> component in list)
+            {
+                level += 1;
+                component.AssignLevels(level);
             }
 
         }
@@ -216,8 +249,6 @@ namespace Harris.GPC
 
         public static List<IComponent<T>> ToArray(Composite<T> root)
         {
-            //IComponent<T>[] arr = new IComponent<T>(Count+1);
-
             List<IComponent<T>> ls = new List<IComponent<T>>();
 
             ls.Add(root);

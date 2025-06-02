@@ -2,9 +2,6 @@ using UnityEngine;
 using Harris.GPC;
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditor.ProjectWindowCallback;
-using System.Linq;
 
 namespace FSMController
 {
@@ -144,7 +141,6 @@ namespace FSMController
             string res = "";
             foreach(var line in lines)
             {
-                Debug.Log("LINE: " + line);
                 res += indent(level) + line;
                 if (j < lines.Length)
                     res += "\n";
@@ -222,21 +218,10 @@ namespace FSMController
             component._onFinished += HandleAborted;
         }
 
-
-        /*public virtual void AddLeaf<T,V> (T component) where V: FSM, new() where T: LeafFSM<V>
-        {
-            Add(component);
-            component._onFinished += HandleAborted;
-        }*/
-
         public virtual void AddLeaf(LeafFSM component)
         {
             Add(component);
             component._onFinished += HandleAborted;
-
-            //ERROR: THE CONVERSION IS FALSE
-            //if(component as IComponent<T> != null)
-                //.Log("Component converted is NOT null!");
         }
 
         public void HandleAborted(IComponent<FSM> component)
@@ -274,12 +259,6 @@ namespace FSMController
 
         public override void Update()
         {
-            //Debug.Log("List Count = " + list.Count);
-            //.Log("Current: " + current);
-
-            //if(list[current] == null)
-            //Debug.Log("Current is null!");
-
             if (!finished)
             {
                 list[current].Update();
@@ -408,6 +387,15 @@ namespace FSMController
         private int current = 0;
         private LeafFSM _executingLeaf = null;
 
+        public void Reset()
+        {
+            if(_root != null)
+            {
+                _root = new CompositeFSM();
+                _root.Desc = "Root";
+            }
+        }
+
         private void Awake()
         {
             _root = null;
@@ -425,7 +413,7 @@ namespace FSMController
             _root.AddComposite(component);
         }
 
-        public void Initialize()
+        public virtual void Initialize()
         {
 
             _executingLeaf = _root.Start() as LeafFSM;//Find first leaf component and enter its state machine
@@ -444,8 +432,6 @@ namespace FSMController
 
         public string Serialize(string filename)
         {
-            //int i = 45;
-            //ObjectSerializer.SerializeObject(i, filename);
             return "{\n" + Root.ToFile(filename,1) + "}\n";
         }
 

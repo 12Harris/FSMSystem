@@ -10,7 +10,8 @@ namespace FSMController
     [ExecuteAlways]
     public class IntelligentBot : StateMachineController
     {
-        private CompositeFSM _fsm = new CompositeFSM();
+        //private CompositeFSM _fsm = new CompositeFSM();
+        private CompositeFSM _fsm;
 
         private WaypointsController _waypointsController;
 
@@ -23,21 +24,19 @@ namespace FSMController
             _waypointsController = GetComponent<WaypointsController>();
             _waypointsController.ConnectWaypoints();
 
-            InitializeFSM();
-
-            AddComposite(_fsm);
-            StateMachineController.SerializeStateMachine(this, " temp");
             Initialize();
         }
 
-        private void InitializeFSM()
+        public override void Initialize()
         {
+            Reset();
+            _fsm = new CompositeFSM();
 
-            foreach (var wp in _waypointsController.Waypoints)
+            /*foreach (var wp in _waypointsController.Waypoints)
             {
                 int i = 1;
 
-                Debug.Log("wp connections count: " + wp.Connections.Count);
+                Debug.Log("wp connections count " + wp.Connections.Count);
 
                 foreach (var connection in wp.Connections)
                 {
@@ -57,7 +56,7 @@ namespace FSMController
 
                     i++;
                 }
-                
+
             }
 
             for (int i = 0; i < _fsm.list.Count; i++)
@@ -71,7 +70,34 @@ namespace FSMController
                 }
                 log += ")";
                 Debug.Log(log);
-            }
+            }*/
+
+            var fsm0 = new LeafFSM(new FSM());
+            _fsm.AddLeaf(fsm0);
+
+            var fsm1 = new CompositeFSM();
+            fsm1.AddLeaf(new LeafFSM(new FSM()));
+            fsm1.AddLeaf(new LeafFSM(new FSM()));
+            fsm1.AddLeaf(new LeafFSM(new FSM()));
+
+             var fsm1_1 = new CompositeFSM();
+            fsm1_1.Add(new LeafFSM(new FSM()));
+            fsm1.AddComposite(fsm1_1);
+            _fsm.AddComposite(fsm1);
+
+
+            var fsm2 = new CompositeFSM();
+            fsm2.AddLeaf(new LeafFSM(new FSM()));
+            fsm2.AddLeaf(new LeafFSM(new FSM()));
+            fsm2.AddLeaf(new LeafFSM(new FSM()));
+            _fsm.AddComposite(fsm2);
+
+            var fsm3 = new LeafFSM(new FSM());
+            _fsm.AddLeaf(fsm3);
+            
+            AddComposite(_fsm);
+            SerializeStateMachine(this, " temp");
+            base.Initialize();
 
         }
 
