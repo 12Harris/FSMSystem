@@ -2,12 +2,22 @@ using UnityEngine;
 using UnityEditor;
 using Harris.GPC;
 using System.Collections.Generic;
+using UnityEngine.UIElements;
 using System.Linq;
 using System;
 
 namespace FSMController
 {
     //NOTES: GUI COORDINATES (0,0) represents the top-left corner and Y increases downwards.
+
+
+    public enum FSMContextMenuOptions
+    {
+        NONE = -1,
+        AddFSM = 0,
+        X = 1,
+        Y = 2,
+    };
 
     public class SelectedEntry
     {
@@ -52,6 +62,8 @@ namespace FSMController
 
         private Rect addFSMContextMenuRect;
 
+        private FSMContextMenuOptions _fsmContextMenuOptions = FSMContextMenuOptions.NONE;
+
         int index = -1;
 
         //GUIUtility.ScreenToGUIPoint(screenPos);
@@ -71,6 +83,10 @@ namespace FSMController
 
             if (_selectedEntryIndicatorResource2 == null)
                 _selectedEntryIndicatorResource2 = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/Textures/selector_down.svg", typeof(Texture2D));
+
+            rootVisualElement.styleSheets.Add(AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/stylesheet1.uss"));
+
+            //rootVisualElement.style
 
         }
 
@@ -204,7 +220,9 @@ namespace FSMController
                 return;
 
             current = 0;
+            EditorGUILayout.BeginVertical();
             ShowHieararchy(_fsmController.Root, _hierarchy_offset, 0);
+            EditorGUILayout.EndVertical();
 
             //Draw Template FSM Dropdown
             temp.text = "Choose FSM Template";
@@ -212,23 +230,49 @@ namespace FSMController
 
             if (_showAddFSMContextMenu && _selectedEntryIndex > -1)
             {
-                //GUIContent contextMenu = new GUIContent();
-                //contextMenu.text = "Add FSM";
-                //GUI.Label(new Rect(_selectedEntries[_selectedEntryIndex]._rect.x, _selectedEntries[_selectedEntryIndex]._rect.y, 50, 20), contextMenu);
-
                 //public static int Popup(Rect position, GUIContent label, int selectedIndex, GUIContent[] displayedOptions, GUIStyle style = EditorStyles.popup);
                 index = -1;
                 string[] options = { "New Composite", "New Leaf" };
                 addFSMContextMenuRect = new Rect(_selectedEntries[_selectedEntryIndex]._rect.x + 40, _selectedEntries[_selectedEntryIndex]._rect.y, 120, 20);
-                index = EditorGUI.Popup(
+
+                /*index = EditorGUI.Popup(
                 addFSMContextMenuRect,
                 index,
-                options, EditorStyles.popup);
+                options);*/
 
+                GenericMenu menu = new GenericMenu();
+                GUIContent content = new GUIContent();
+                menu.AddItem(new GUIContent("New Composite"), false, On_FSM_Action_Selected,"composite");
+                menu.AddItem(new GUIContent("New Leaf"), false, On_FSM_Action_Selected,"leaf");
+                menu.DropDown(addFSMContextMenuRect);
+    
                 _leftMousePressed = false;
+
+                _showAddFSMContextMenu = false;
 
                 Debug.Log("CHOSEN OPTION: " + index);
             }
+        }
+        void On_FSM_Action_Selected(object action)
+        {
+            string action_string = action as string;
+            if (action_string == "composite")
+            {
+                CompositeFSM fsm = new CompositeFSM();
+                (_selectedEntry as CompositeFSM).AddComposite(fsm);
+            }
+            else
+            {
+                LeafFSM fsm = new LeafFSM(new FSM());
+                (_selectedEntry as CompositeFSM).AddLeaf(fsm);
+            }
+
+            Instance.FSMController.Root.AssignLevels(0);
+            Instance.FSMController.Root.GenerateID(0);
+                //Instance.SelectedEntries.Add(new SelectedEntry(new Rect(0, 0, 0, 0), Instance.SelectedEntryIndicatorResource, arr[i].ID));
+            Instance.SelectedEntries.Insert(_selectedEntry.ID + 1, new SelectedEntry(new Rect(0, 0, 0, 0), Instance.SelectedEntryIndicatorResource, _selectedEntry.ID + 1));
+            
+            //Repaint();
         }
 
         public void OnLeftMouseReleased()
@@ -243,9 +287,8 @@ namespace FSMController
         public void OnRightMouseReleased()
         {
             _selectedEntry = GetEntry(_mouseGUICoords);
-            if (_selectedEntryIndex >= 0)
+            if (_selectedEntryIndex >= 0 && _selectedEntry is CompositeFSM)
             {
-                Debug.Log("rm released");
                 _showAddFSMContextMenu = true;
                 //_showAddFSMContextMenu = !_showAddFSMContextMenu;
             }
@@ -361,29 +404,6 @@ namespace FSMController
 
             var arr = CompositeFSM.ToArray(_fsmController.Root);
 
-            //calculate index in hierarchy from mouseposy
-            /*var mouseRelativeY = mousePos.y - _hierarchy_offset.y;
-
-            int index = (int)mouseRelativeY / 20;
-
-            if (index >= arr.Count)
-                return null;
-
-            _selectedEntryIndex = -1;
-
-            int j;
-            
-            Debug.Log("INDEX = " + index);
-            Debug.Log("LEVEL = " + arr[index].Level);
-
-
-            if (_selectedEntries[index]._rect.Contains(UnityEngine.Event.current.mousePosition))
-            {
-                //_selectedEntryIndex = _selectedEntries[index]._componentID;
-                _selectedEntryIndex = index;
-                return arr[_selectedEntryIndex];
-            }*/
-
             var oldSelectedEntryIndex = _selectedEntryIndex;
             for (int i = 0; i < _selectedEntries.Count; i++)
             {
@@ -403,7 +423,6 @@ namespace FSMController
 
         private void onSelectionChanged()
         {
-            //_showAddFSMContextMenu = false;
         }
 
         private void Update()
@@ -416,7 +435,8 @@ namespace FSMController
                     Debug.Log("Selected Entry: " + (_selectedEntry as CompositeFSM).Desc);
 
             }
-
+            
+            //update selected entry
             if (_selectedEntryIndex != -1 && !_selectedEntries[_selectedEntryIndex]._rect.Contains(_mouseGUICoords) && !_showAddFSMContextMenu)
             {
                 Debug.Log("sel entry = -1");
@@ -426,7 +446,7 @@ namespace FSMController
             if (index > -1)
             {
                 Debug.Log("showaddmenu = false!");
-                _showAddFSMContextMenu = false;
+                //_showAddFSMContextMenu = false;
             }
 
             if (_leftMousePressed && _mouseGUICoords.x <= 100 && _mouseGUICoords.x >= 0 && _mouseGUICoords.y <= 800 && _mouseGUICoords.y >= 0)
